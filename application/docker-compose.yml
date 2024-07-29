@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis/redis-stack-server:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - redis-ghost-blogger_ghost-network
+
+  backend:
+    build: .
+    command: uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000 
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"  
+    depends_on:
+      - redis
+    networks:
+      - redis-ghost-blogger_ghost-network
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0  
+
+  frontend:
+    build: .
+    command: streamlit run frontend/frontend.py
+    volumes:
+      - .:/app
+    ports:
+      - "8501:8501"  
+    depends_on:
+      - backend
+    networks:
+      - redis-ghost-blogger_ghost-network
+    environment:
+      - API_BASE_URL=http://backend:8000
+
+
+volumes:
+  redis-data:
+
+networks:
+  redis-ghost-blogger_ghost-network:
+    external: true
